@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.preference.PreferenceManager
 import android.support.v7.widget.AppCompatImageView
 import android.util.AttributeSet
 
@@ -18,10 +19,18 @@ class GridImageView(context: Context, attrs: AttributeSet?, defStyleAttr: Int)
                 color = Color.BLACK
             }
 
-    var gridScale = 100
+    val preference by lazy { PreferenceManager.getDefaultSharedPreferences(context) }
+    var gridScale = -1
         set(value) {
+            preference.edit().putInt("grid_scale", value).apply()
             field = value
             invalidate()
+        }
+        get() {
+            if (field < 0) {
+                field = preference.getInt("grid_scale", 100)
+            }
+            return field
         }
 
     override fun onDraw(canvas: Canvas?) {

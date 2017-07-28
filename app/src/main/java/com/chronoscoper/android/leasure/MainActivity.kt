@@ -7,11 +7,13 @@ import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.os.AsyncTask
 import android.os.Bundle
+import android.preference.PreferenceManager
 import android.support.v7.app.AppCompatActivity
 import android.view.*
 import android.widget.Button
 import android.widget.SeekBar
 import android.widget.TextView
+import android.widget.Toast
 import com.azeesoft.lib.colorpicker.ColorPickerDialog
 import com.chronoscoper.android.leasure.widget.GridImageView
 import kotterknife.bindView
@@ -31,8 +33,31 @@ class MainActivity : AppCompatActivity() {
     private val colorRangeStartButton by bindView<Button>(R.id.color_range_start)
     private val colorRangeEndButton by bindView<Button>(R.id.color_range_end)
 
-    private var colorRangeStart = 0x000000
-    private var colorRangeEnd = 0x000000
+    private val preference by lazy { PreferenceManager.getDefaultSharedPreferences(this) }
+
+    private var colorRangeStart = -1
+        set(value) {
+            preference.edit().putInt("color_range_start", value).apply()
+            field = value
+        }
+        get() {
+            if (field < 0) {
+                field = preference.getInt("color_range_start", 0x000000)
+            }
+            return field
+        }
+
+    private var colorRangeEnd = -1
+        set(value) {
+            preference.edit().putInt("color_range_end", value).apply()
+            field = value
+        }
+        get() {
+            if (field < 0) {
+                field = preference.getInt("color_range_end", 0x000000)
+            }
+            return field
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,6 +67,7 @@ class MainActivity : AppCompatActivity() {
             gestureDetector.onTouchEvent(motionEvent)
         }
 
+        gridScaleSeekBar.progress = preference.getInt("grid_scale", 100)
         gridScaleSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(view: SeekBar?, progress: Int, p2: Boolean) {
                 if (progress != 0) {
@@ -57,9 +83,14 @@ class MainActivity : AppCompatActivity() {
         })
 
         calculateButton.setOnClickListener {
-            object : AsyncTask<Unit, Unit, Unit>() {
-                override fun doInBackground(vararg p0: Unit?) {
-                    if (bitmap == null) return
+            object : AsyncTask<Unit, Unit, Bitmap>() {
+                override fun onPreExecute() {
+                    super.onPreExecute()
+                    calculateButton.isEnabled = false
+                }
+
+                override fun doInBackground(vararg p0: Unit?): Bitmap? {
+                    if (bitmap == null) return null
                     val bitmap = bitmap!!
                     val startR = Color.red(colorRangeStart)
                     val startG = Color.green(colorRangeStart)
@@ -70,8 +101,9 @@ class MainActivity : AppCompatActivity() {
 
                     val h = bitmap.height
                     val w = bitmap.width
+                    val result = Bitmap.createBitmap(w, h, Bitmap.Config.RGB_565)
                     val pixelCount = h * w
-                    var detected = 0
+                    detectedPixels = 0
                     for (x in 0..w - 1) {
                         for (y in 0..h - 1) {
                             val pixel = bitmap.getPixel(x, y)
@@ -81,27 +113,45 @@ class MainActivity : AppCompatActivity() {
                             if ((pixelR in startR..endR || pixelR in endR..startR)
                                     && (pixelG in startG..endG || pixelG in endG..startG)
                                     && (pixedB in startB..endB || pixedB in endB..startB)) {
-                                detected++
+                                detectedPixels++
+                                result.setPixel(x, y, colorRangeEnd)
+                            } else {
+                                result.setPixel(x, y, Color.WHITE)
                             }
                         }
                     }
 
-                    val fraction = detected.toFloat() / pixelCount.toFloat()
-                    val bitmapMeasure = (h / preview.gridScale) * (w / preview.gridScale)
+                    val fraction = detectedPixels.toFloat() / pixelCount.toFloat()
+                    totalPixels = w * h
+                    totalMeasure = getActualLength(w) * getActualLength(h)
                     percentage = fraction * 100f
-                    squareMeasure = bitmapMeasure * fraction
+                    squareMeasure = totalMeasure * fraction
+                    return result
                 }
 
+                private var totalPixels = 0
+                private var detectedPixels = 0
+                private var totalMeasure = 0f
                 private var percentage = 0f
                 private var squareMeasure = 0f
 
-                override fun onPostExecute(result: Unit?) {
+                override fun onPostExecute(result: Bitmap?) {
                     super.onPostExecute(result)
-                    resultText.text = getString(R.string.result, percentage, squareMeasure)
+                    calculateButton.isEnabled = true
+                    resultText.text = getString(R.string.result,
+                            totalPixels, detectedPixels, totalMeasure, squareMeasure, percentage)
+                    if (result != null) {
+                        preview.setImageBitmap(result)
+                    }
                 }
+
+                private fun getActualLength(pixelLength: Int): Float
+                        = pixelLength.toFloat() / preview.gridScale.toFloat()
+
             }.execute()
         }
 
+        colorRangeStartButton.setBackgroundColor(colorRangeStart)
         colorRangeStartButton.setOnClickListener {
             ColorPickerDialog.createColorPickerDialog(this)
                     .apply {
@@ -113,6 +163,7 @@ class MainActivity : AppCompatActivity() {
                     }
                     .show()
         }
+        colorRangeEndButton.setBackgroundColor(colorRangeEnd)
         colorRangeEndButton.setOnClickListener {
             ColorPickerDialog.createColorPickerDialog(this)
                     .apply {

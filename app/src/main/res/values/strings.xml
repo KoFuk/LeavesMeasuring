@@ -1,9 +1,9 @@
 <resources>
-    <string name="app_name">Leasure</string>
+    <string name="app_name">Measure</string>
     <string name="pick_image">画像を選択</string>
     <string name="preview">プレビュー</string>
     <string name="calculate">計算</string>
     <string name="grid_scale">グリッドの間隔（1マス=1cm）</string>
-    <string name="result">%1$fパーセント、%2$f平方センチメートル</string>
+    <string name="result">総ピクセル数%1$d\n該当ピクセル数%2$d\n画像総面積%3$f平方センチメートル\n該当面積%4$f平方センチメートル\n%5$fパーセント</string>
     <string name="range">範囲</string>
 </resources>
