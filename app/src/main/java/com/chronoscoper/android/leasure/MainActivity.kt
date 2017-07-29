@@ -13,7 +13,6 @@ import android.view.*
 import android.widget.Button
 import android.widget.SeekBar
 import android.widget.TextView
-import android.widget.Toast
 import com.azeesoft.lib.colorpicker.ColorPickerDialog
 import com.chronoscoper.android.leasure.widget.GridImageView
 import kotterknife.bindView
@@ -30,31 +29,31 @@ class MainActivity : AppCompatActivity() {
     private val gridScaleSeekBar by bindView<SeekBar>(R.id.grid_scale)
     private val calculateButton by bindView<Button>(R.id.calculate)
     private val resultText by bindView<TextView>(R.id.result)
-    private val colorRangeStartButton by bindView<Button>(R.id.color_range_start)
-    private val colorRangeEndButton by bindView<Button>(R.id.color_range_end)
+    private val colorButton by bindView<Button>(R.id.color)
+    private val thresholdSeekBar by bindView<SeekBar>(R.id.threshold)
 
     private val preference by lazy { PreferenceManager.getDefaultSharedPreferences(this) }
 
-    private var colorRangeStart = -1
+    private var color = -1
         set(value) {
-            preference.edit().putInt("color_range_start", value).apply()
+            preference.edit().putInt("color", value).apply()
             field = value
         }
         get() {
             if (field < 0) {
-                field = preference.getInt("color_range_start", 0x000000)
+                field = preference.getInt("color", 0x000000)
             }
             return field
         }
 
-    private var colorRangeEnd = -1
+    private var threshold = -1
         set(value) {
-            preference.edit().putInt("color_range_end", value).apply()
+            preference.edit().putInt("threshold", value).apply()
             field = value
         }
         get() {
             if (field < 0) {
-                field = preference.getInt("color_range_end", 0x000000)
+                field = preference.getInt("threshold", 100)
             }
             return field
         }
@@ -92,12 +91,9 @@ class MainActivity : AppCompatActivity() {
                 override fun doInBackground(vararg p0: Unit?): Bitmap? {
                     if (bitmap == null) return null
                     val bitmap = bitmap!!
-                    val startR = Color.red(colorRangeStart)
-                    val startG = Color.green(colorRangeStart)
-                    val startB = Color.blue(colorRangeStart)
-                    val endR = Color.red(colorRangeEnd)
-                    val endG = Color.green(colorRangeEnd)
-                    val endB = Color.blue(colorRangeEnd)
+                    val startR = Color.red(color)
+                    val startG = Color.green(color)
+                    val startB = Color.blue(color)
 
                     val h = bitmap.height
                     val w = bitmap.width
@@ -109,12 +105,12 @@ class MainActivity : AppCompatActivity() {
                             val pixel = bitmap.getPixel(x, y)
                             val pixelR = Color.red(pixel)
                             val pixelG = Color.green(pixel)
-                            val pixedB = Color.blue(pixel)
-                            if ((pixelR in startR..endR || pixelR in endR..startR)
-                                    && (pixelG in startG..endG || pixelG in endG..startG)
-                                    && (pixedB in startB..endB || pixedB in endB..startB)) {
+                            val pixelB = Color.blue(pixel)
+                            if (Math.sqrt(Math.pow((startR - pixelR).toDouble(), 2.0)
+                                    + Math.pow((startG - pixelG).toDouble(), 2.0)
+                                    + Math.pow((startB - pixelB).toDouble(), 2.0)) < threshold) {
                                 detectedPixels++
-                                result.setPixel(x, y, colorRangeEnd)
+                                result.setPixel(x, y, color)
                             } else {
                                 result.setPixel(x, y, Color.WHITE)
                             }
@@ -151,30 +147,31 @@ class MainActivity : AppCompatActivity() {
             }.execute()
         }
 
-        colorRangeStartButton.setBackgroundColor(colorRangeStart)
-        colorRangeStartButton.setOnClickListener {
+        colorButton.setBackgroundColor(color)
+        colorButton.setOnClickListener {
             ColorPickerDialog.createColorPickerDialog(this)
                     .apply {
-                        setHexaDecimalTextColor(colorRangeStart)
+                        setHexaDecimalTextColor(color)
                         setOnColorPickedListener { color, _ ->
-                            colorRangeStart = color
+                            this@MainActivity.color = color
                             it.setBackgroundColor(color)
                         }
                     }
                     .show()
         }
-        colorRangeEndButton.setBackgroundColor(colorRangeEnd)
-        colorRangeEndButton.setOnClickListener {
-            ColorPickerDialog.createColorPickerDialog(this)
-                    .apply {
-                        setHexaDecimalTextColor(colorRangeEnd)
-                        setOnColorPickedListener { color, _ ->
-                            colorRangeEnd = color
-                            it.setBackgroundColor(color)
-                        }
-                    }
-                    .show()
-        }
+
+        thresholdSeekBar.progress = threshold
+        thresholdSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(view: SeekBar?, progress: Int, p2: Boolean) {
+                threshold = progress
+            }
+
+            override fun onStartTrackingTouch(p0: SeekBar?) {
+            }
+
+            override fun onStopTrackingTouch(p0: SeekBar?) {
+            }
+        })
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {

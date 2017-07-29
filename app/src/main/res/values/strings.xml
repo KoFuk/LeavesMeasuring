@@ -6,4 +6,7 @@
     <string name="grid_scale">グリッドの間隔（1マス=1cm）</string>
     <string name="result">総ピクセル数%1$d\n該当ピクセル数%2$d\n画像総面積%3$f平方センチメートル\n該当面積%4$f平方センチメートル\n%5$fパーセント</string>
     <string name="range">範囲</string>
+    <string name="color">色</string>
+    <string name="threshold">閾値</string>
+    <string name="oss_license">オープンソースライセンス</string>
 </resources>
