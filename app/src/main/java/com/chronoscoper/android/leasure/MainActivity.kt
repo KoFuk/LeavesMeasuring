@@ -15,6 +15,7 @@ import android.widget.SeekBar
 import android.widget.TextView
 import com.azeesoft.lib.colorpicker.ColorPickerDialog
 import com.chronoscoper.android.leasure.widget.GridImageView
+import com.chronoscoper.library.licenseviewer.LicenseViewer
 import kotterknife.bindView
 
 
@@ -187,6 +188,8 @@ class MainActivity : AppCompatActivity() {
             startActivityForResult(intent, REQUEST_CODE_FILE_PICK)
 
             return true
+        } else if (item?.itemId == R.id.oss_license) {
+            LicenseViewer.open(this, getString(R.string.oss_license))
         }
         return super.onOptionsItemSelected(item)
     }

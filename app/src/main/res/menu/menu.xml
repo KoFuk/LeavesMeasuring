@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:app="http://schemas.android.com/apk/res-auto"
-      xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/pick_image"
         android:icon="@drawable/ic_file"
         android:title="@string/pick_image"
         app:showAsAction="always"/>
+    <item
+        android:id="@+id/oss_license"
+        android:title="@string/oss_license"/>
 </menu>
